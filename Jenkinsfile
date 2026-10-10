@@ -35,7 +35,8 @@ pipeline {
                         --source . ^
                         --project %PROJECT_ID% ^
                         --region %REGION% ^
-                        --allow-unauthenticated
+                        --allow-unauthenticated ^
+                        --set-build-env-vars GOOGLE_RUNTIME_VERSION=17
                 '''
             }
         }

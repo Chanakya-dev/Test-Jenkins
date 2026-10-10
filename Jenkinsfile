@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -16,25 +15,14 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                bat 'call gradlew.bat clean build'
-            }
-        }
-
         stage('Authenticate with GCP') {
             steps {
                 withCredentials([
-                    file(
-                        credentialsId: 'gcp-sa-key',
-                        variable: 'GCP_KEY'
-                    )
+                    file(credentialsId: 'gcp-sa-key', variable: 'GCP_KEY')
                 ]) {
                     bat '''
                         gcloud auth activate-service-account --key-file="%GCP_KEY%"
                         gcloud config set project %PROJECT_ID%
-                        gcloud auth list
-                        gcloud config get-value project
                     '''
                 }
             }

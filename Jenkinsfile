@@ -20,18 +20,12 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                script {
-                    app = docker.build("${IMAGE_URL}")
-                }
+                bat "docker build -t ${IMAGE_URL} ."
             }
         }
         stage('Push to Artifact Registry') {
             steps {
-                script {
-                    docker.withRegistry("https://${GAR_HOST}", "gcloud") {
-                        app.push()
-                    }
-                }
+                bat "docker push ${IMAGE_URL}"
             }
         }
         stage('Deploy to Cloud Run') {

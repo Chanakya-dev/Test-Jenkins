@@ -1,44 +1,32 @@
-pipeline {
-    agent any
-
-    environment {
-        PROJECT_ID = 'test-project0012'
-        REGION = 'asia-south1'
-        SERVICE_NAME = 'sample'
-    }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/Chanakya-dev/Test-Jenkins.git'
-            }
-        }
-
-        stage('Authenticate with GCP') {
-            steps {
-                withCredentials([
-                    file(credentialsId: 'gcp-sa-key', variable: 'GCP_KEY')
-                ]) {
-                    bat '''
-                        gcloud auth activate-service-account --key-file="%GCP_KEY%"
-                        gcloud config set project %PROJECT_ID%
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Cloud Run') {
-            steps {
-                bat '''
-                    gcloud run deploy %SERVICE_NAME% ^
-                        --source . ^
-                        --project %PROJECT_ID% ^
-                        --region %REGION% ^
-                        --allow-unauthenticated ^
-                        --set-build-env-vars GOOGLE_RUNTIME_VERSION=17
-                '''
-            }
-        }
-    }
+pipeline{
+	agent any
+	stages{
+		stage('Checkout'){
+			steps{
+				checkout scm
+			}
+		}
+		stage('Gradle Build'){
+			steps{
+				bat 'gradlew.bat clean build'
+			}
+		}
+		stage('Build Docker Image'){
+			steps{
+				bat 'docker build -t sample:latest .'
+			}
+		}
+		stage('Stop OLD Container'){
+			steps{
+				script{
+					bat 'docker rm-f sample-container || exit /b 0'
+				}
+			}
+		}
+		stage('Deploy Container'){
+			steps{
+				bat 'docker run -d --name sample-container -p 8080:8080 sample:latest'
+			}
+		}
+	}
 }

@@ -13,8 +13,8 @@ pipeline {
         stage('Authenticate to GCP') {
             steps {
                 withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GCP_KEY')]) {
-                    sh 'gcloud auth activate-service-account --key-file="${GCP_KEY}"'
-                    sh "gcloud auth configure-docker ${GAR_HOST} --quiet"
+                    bat "gcloud auth activate-service-account --key-file=\"${GCP_KEY}\""
+                    bat "gcloud auth configure-docker ${GAR_HOST} --quiet"
                 }
             }
         }
@@ -36,13 +36,7 @@ pipeline {
         }
         stage('Deploy to Cloud Run') {
             steps {
-                sh """
-                    gcloud run deploy ${SERVICE_NAME} \
-                        --image=${IMAGE_URL} \
-                        --region=${REGION} \
-                        --platform=managed \
-                        --allow-unauthenticated
-                """
+                bat "gcloud run deploy ${SERVICE_NAME} --image=${IMAGE_URL} --region=${REGION} --platform=managed --allow-unauthenticated"
             }
         }
     }

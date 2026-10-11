@@ -1,32 +1,49 @@
-pipeline{
-	agent any
-	stages{
-		stage('Checkout'){
-			steps{
-				checkout scm
-			}
-		}
-		stage('Gradle Build'){
-			steps{
-				bat 'gradlew.bat clean build'
-			}
-		}
-		stage('Build Docker Image'){
-			steps{
-				bat 'docker build -t sample:latest .'
-			}
-		}
-		stage('Stop OLD Container'){
-			steps{
-				script{
-					bat 'docker rm-f sample-container || exit /b 0'
-				}
-			}
-		}
-		stage('Deploy Container'){
-			steps{
-				bat 'docker run -d --name sample-container -p 8080:8080 sample:latest'
-			}
-		}
-	}
+pipeline {
+    agent any
+    environment {
+        PROJECT_ID   = 'test-project0012'
+        REGION       = 'asia-south1'
+        REPOSITORY   = 'test-jenkins'
+        SERVICE_NAME = 'sample'
+        IMAGE_TAG    = "${env.BUILD_NUMBER}"
+        GAR_HOST     = "${REGION}-docker.pkg.dev"
+        IMAGE_URL    = "${GAR_HOST}/${PROJECT_ID}/${REPOSITORY}/${SERVICE_NAME}:${IMAGE_TAG}"
+    }
+    stages {
+        stage('Authenticate to GCP') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    sh 'gcloud auth activate-service-account --key-file="${GOOGLE_APPLICATION_CREDENTIALS}"'
+                    sh "gcloud auth configure-docker ${GAR_HOST} --quiet"
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    app = docker.build("${IMAGE_URL}")
+                }
+            }
+        }
+        stage('Push to Artifact Registry') {
+            steps {
+                script {
+                    docker.withRegistry("https://${GAR_HOST}", "gcloud") {
+                        app.push()
+                    }
+                }
+            }
+        }
+        stage('Deploy to Cloud Run') {
+            steps {
+                sh """
+                    gcloud run deploy ${SERVICE_NAME} \
+                        --image=${IMAGE_URL} \
+                        --region=${REGION} \
+                        --platform=managed \
+                        --allow-unauthenticated
+                """
+            }
+        }
+    }
 }

@@ -18,6 +18,18 @@ pipeline {
                 }
             }
         }
+        
+        // --- ADDED THIS STAGE TO GENERATE THE JAR FILE ---
+        stage('Build Project') {
+            steps {
+                // If using Gradle Wrapper:
+                bat './gradlew build'
+                
+                // If using Maven instead, comment out the line above and uncomment this:
+                // bat 'mvn clean package'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 bat "docker build -t ${IMAGE_URL} ."

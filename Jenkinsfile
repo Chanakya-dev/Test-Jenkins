@@ -12,8 +12,8 @@ pipeline {
     stages {
         stage('Authenticate to GCP') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                    sh 'gcloud auth activate-service-account --key-file="${GOOGLE_APPLICATION_CREDENTIALS}"'
+                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GCP_KEY')]) {
+                    sh 'gcloud auth activate-service-account --key-file="${GCP_KEY}"'
                     sh "gcloud auth configure-docker ${GAR_HOST} --quiet"
                 }
             }
